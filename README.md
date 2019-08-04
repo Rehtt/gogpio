@@ -7,6 +7,7 @@
 	3.释放GPIO口（Close()）
 
 示例：
+```
 	package main
 
 	import (
@@ -46,3 +47,4 @@
 		in.Close()
 		out.Close()
 	}
+	```
