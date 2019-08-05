@@ -30,6 +30,7 @@
 package gogpio
 
 import (
+	"errors"
 	"io/ioutil"
 	"strconv"
 )
@@ -78,21 +79,21 @@ func (c *Config) Close() {
 	ioutil.WriteFile("/sys/class/gpio/unexport", []byte(c.Port), 0644)
 }
 
-func Open(port int, way string) Operating {
+func Open(port int, way string) (Operating, error) {
 	Port := strconv.Itoa(port)
 	c := &Config{Port: Port, cWay: ""}
 	if way != IN && way != OUT {
-		panic("Must specify how it works(gogpio.OUT/gogpio.IN)")
+		return nil, errors.New("Must specify how it works(gogpio.OUT/gogpio.IN)")
 	}
 	err := ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/direction", []byte(way), 0644)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	c.cWay = way
 	p := "/sys/class/gpio/"
-	ioutil.WriteFile(p+"unexport", []byte(c.Port), 0644)
+	c.Close()
 	ioutil.WriteFile(p+"export", []byte(c.Port), 0644)
 
-	return c
+	return c, nil
 
 }
