@@ -1,6 +1,5 @@
-
 /*
-GPIO简单的操作
+对GPIO简单的操作
 功能：
 	1.设置指定的GPIO口是发射还是接收口（in/out）
 	2.设置发射口是高电平还是低电平（1/0）
@@ -15,66 +14,59 @@ GPIO简单的操作
 	)
 
 	func main() {
-		//指定GPIO口及类型（in/out）
-		c := &gogpio.Config{
-			Port: "21",
-			Way:  "in",
+		out := gogpio.Open(20)
+		out.Way("out")
+		out.High()
+	
+		in := gogpio.Open(21)
+		in.Way("in")
+		s,err := in.Read()
+		if err != nil{
+			log.Println(err)
 		}
-		c2 := &gogpio.Config{
-			Port: "20",
-			Way:  "out",
-		}
-
-		//开启GPIO口
-		in := gogpio.Open(c2)
-		out := gogpio.Open(c)
-
-		//发射口输出高电平（1）
-		err := out.Write([]byte("1"))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		//接受口读取
-		res, err := in.Read()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println(string(res))
-
-		//释放
-		in.Close()
-		out.Close()
+		log.Println(string(s))
 	}
 
- */
-
-
-
+*/
 
 package gogpio
 
 import (
 	"io/ioutil"
+	"strconv"
 )
 
 type Config struct {
 	Port string
-	Way  string
+	cWay string
 }
 
 type Operating interface {
-	Write(b []byte) error
+	High()
+	Low()
 	Read() ([]byte, error)
+	Way(way string)
 	Close()
 }
 
-func (c *Config) Write(b []byte) error {
-	err := ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/value", b, 0644)
-	if err != nil {
-		return err
+func (c *Config) High() {
+	if c.cWay != "in" && c.cWay != "" {
+		ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/value", []byte("1"), 0644)
+	} else if c.cWay == "in" {
+		panic("Must be \"out\" for available")
+	} else {
+		panic("Must specify how it works(.Way())")
 	}
-	return nil
+}
+
+func (c *Config) Low() {
+	if c.cWay != "in" && c.cWay != "" {
+		ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/value", []byte("0"), 0644)
+	} else if c.cWay == "in" {
+		panic("Must be \"out\" for available")
+	} else {
+		panic("Must specify how it works(.Way())")
+	}
 }
 
 func (c *Config) Read() ([]byte, error) {
@@ -86,29 +78,28 @@ func (c *Config) Read() ([]byte, error) {
 	return s, err
 }
 
+func (c *Config) Way(way string) {
+	if way != "in" && way != "out" {
+		panic("Must specify how it works(in/out)")
+	}
+	err := ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/direction", []byte(way), 0644)
+	if err != nil {
+		panic(err)
+	}
+	c.cWay = way
+
+}
+
 func (c *Config) Close() {
 	ioutil.WriteFile("/sys/class/gpio/unexport", []byte(c.Port), 0644)
 }
 
-func Open(c *Config) Operating {
-	switch c.Way {
-	case "in":
-		break
-	case "out":
-		break
-	default:
-		panic("必须是in/out中一种")
-	}
-
+func Open(port int) Operating {
+	Port := strconv.Itoa(port)
+	c := &Config{Port: Port, cWay: ""}
 	p := "/sys/class/gpio/"
-
 	ioutil.WriteFile(p+"unexport", []byte(c.Port), 0644)
 	ioutil.WriteFile(p+"export", []byte(c.Port), 0644)
-
-	err := ioutil.WriteFile(p+"gpio"+c.Port+"/direction", []byte(c.Way), 0644)
-	if err!=nil{
-		panic(err)
-	}
 
 	return c
 
