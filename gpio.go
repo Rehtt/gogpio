@@ -83,16 +83,17 @@ func Open(port int, way string) (Operating, error) {
 	Port := strconv.Itoa(port)
 	c := &Config{Port: Port, cWay: ""}
 	if way != IN && way != OUT {
+		c.Close()
 		return nil, errors.New("Must specify how it works(gogpio.OUT/gogpio.IN)")
 	}
 	err := ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/direction", []byte(way), 0644)
 	if err != nil {
+		c.Close()
 		return nil, err
 	}
 	c.cWay = way
-	p := "/sys/class/gpio/"
 	c.Close()
-	ioutil.WriteFile(p+"export", []byte(c.Port), 0644)
+	ioutil.WriteFile("/sys/class/gpio/export", []byte(c.Port), 0644)
 
 	return c, nil
 
