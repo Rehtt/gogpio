@@ -10,42 +10,22 @@
 示例：<br>
 ```
 	package main
-
 	import (
 		"github.com/rehtt/gogpio"
 		"log"
 	)
-
 	func main() {
-		//指定GPIO口及类型（in/out）
-		c := &gogpio.Config{
-			Port: "21",
-			Way:  "in",
+		out := gogpio.Open(20)
+		out.Way("out")
+		out.High()
+	
+		in := gogpio.Open(21)
+		in.Way("in")
+		s,err := in.Read()
+		if err != nil{
+			log.Println(err)
 		}
-		c2 := &gogpio.Config{
-			Port: "20",
-			Way:  "out",
-		}
-
-		//开启GPIO口
-		in := gogpio.Open(c2)
-		out := gogpio.Open(c)
-
-		//发射口输出高电平（1）
-		err := out.Write([]byte("1"))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		//接受口读取
-		res, err := in.Read()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println(string(res))
-
-		//释放
-		in.Close()
-		out.Close()
+		log.Println(string(s))
 	}
+
 ```
