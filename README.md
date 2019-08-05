@@ -15,12 +15,9 @@
 		"log"
 	)
 	func main() {
-		out := gogpio.Open(20)
-		out.Way("out")
+		out := gogpio.Open(20,gogpio.OUT)
 		out.High()
-	
-		in := gogpio.Open(21)
-		in.Way("in")
+		in := gogpio.Open(21,gogpio.IN)
 		s,err := in.Read()
 		if err != nil{
 			log.Println(err)
