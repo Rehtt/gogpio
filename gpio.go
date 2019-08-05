@@ -14,12 +14,10 @@
 	)
 
 	func main() {
-		out := gogpio.Open(20)
-		out.Way("out")
+		out := gogpio.Open(20,gogpio.OUT)
 		out.High()
-	
-		in := gogpio.Open(21)
-		in.Way("in")
+
+		in := gogpio.Open(21,gogpio.IN)
 		s,err := in.Read()
 		if err != nil{
 			log.Println(err)
@@ -36,6 +34,9 @@ import (
 	"strconv"
 )
 
+var OUT string = "out"
+var IN string = "in"
+
 type Config struct {
 	Port string
 	cWay string
@@ -45,27 +46,22 @@ type Operating interface {
 	High()
 	Low()
 	Read() ([]byte, error)
-	Way(way string)
 	Close()
 }
 
 func (c *Config) High() {
-	if c.cWay != "in" && c.cWay != "" {
+	if c.cWay != OUT {
 		ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/value", []byte("1"), 0644)
-	} else if c.cWay == "in" {
-		panic("Must be \"out\" for available")
 	} else {
-		panic("Must specify how it works(.Way())")
+		panic("Must be \"gogpio.OUT\" for available")
 	}
 }
 
 func (c *Config) Low() {
-	if c.cWay != "in" && c.cWay != "" {
+	if c.cWay != IN {
 		ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/value", []byte("0"), 0644)
-	} else if c.cWay == "in" {
-		panic("Must be \"out\" for available")
 	} else {
-		panic("Must specify how it works(.Way())")
+		panic("Must be \"gogpio.OUT\" for available")
 	}
 }
 
@@ -78,25 +74,21 @@ func (c *Config) Read() ([]byte, error) {
 	return s, err
 }
 
-func (c *Config) Way(way string) {
-	if way != "in" && way != "out" {
-		panic("Must specify how it works(in/out)")
+func (c *Config) Close() {
+	ioutil.WriteFile("/sys/class/gpio/unexport", []byte(c.Port), 0644)
+}
+
+func Open(port int, way string) Operating {
+	Port := strconv.Itoa(port)
+	c := &Config{Port: Port, cWay: ""}
+	if way != IN && way != OUT {
+		panic("Must specify how it works(gogpio.OUT/gogpio.IN)")
 	}
 	err := ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/direction", []byte(way), 0644)
 	if err != nil {
 		panic(err)
 	}
 	c.cWay = way
-
-}
-
-func (c *Config) Close() {
-	ioutil.WriteFile("/sys/class/gpio/unexport", []byte(c.Port), 0644)
-}
-
-func Open(port int) Operating {
-	Port := strconv.Itoa(port)
-	c := &Config{Port: Port, cWay: ""}
 	p := "/sys/class/gpio/"
 	ioutil.WriteFile(p+"unexport", []byte(c.Port), 0644)
 	ioutil.WriteFile(p+"export", []byte(c.Port), 0644)
