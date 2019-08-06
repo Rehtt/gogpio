@@ -31,6 +31,7 @@ package gogpio
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 )
@@ -51,15 +52,16 @@ type Operating interface {
 }
 
 func (c *Config) High() {
-	if c.cWay != OUT {
+	if c.cWay == OUT {
 		ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/value", []byte("1"), 0644)
 	} else {
+		fmt.Println(c.cWay + "::" + OUT)
 		panic("Must be \"gogpio.OUT\" for available")
 	}
 }
 
 func (c *Config) Low() {
-	if c.cWay != IN {
+	if c.cWay == OUT {
 		ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/value", []byte("0"), 0644)
 	} else {
 		panic("Must be \"gogpio.OUT\" for available")
@@ -86,14 +88,14 @@ func Open(port int, way string) (Operating, error) {
 		c.Close()
 		return nil, errors.New("Must specify how it works(gogpio.OUT/gogpio.IN)")
 	}
-	err := ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/direction", []byte(way), 0644)
+	c.cWay = way
+	c.Close()
+	ioutil.WriteFile("/sys/class/gpio/export", []byte(c.Port), 0644)
+	err := ioutil.WriteFile("/sys/class/gpio/gpio"+c.Port+"/direction", []byte(c.cWay), 0644)
 	if err != nil {
 		c.Close()
 		return nil, err
 	}
-	c.cWay = way
-	c.Close()
-	ioutil.WriteFile("/sys/class/gpio/export", []byte(c.Port), 0644)
 
 	return c, nil
 
