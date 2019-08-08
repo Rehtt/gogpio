@@ -32,6 +32,7 @@ package gogpio
 import (
 	"errors"
 	"io/ioutil"
+	"log"
 	"strconv"
 )
 
@@ -80,7 +81,7 @@ func (c *Config) Read() ([]byte, error) {
 func (c *Config) Close() {
 	err := ioutil.WriteFile("/sys/class/gpio/unexport", []byte(c.Port), 0644)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 }
 
