@@ -16,31 +16,46 @@
 	func main() {
 		//绑定针脚号(BCM)
 		pin1 := gogpio.PinBind(20)
-		pin2:=gogpio.PinBind(21)
-		pin3:=gogpio.PinBind(22)
+		pin2 := gogpio.PinBind(21)
+		pin3 := gogpio.PinBind(22)
+		pin4 := gogpio.PinBind(23)
 
 		//声明针脚为out输出
 		out, err := pin1.SetOut()
-		if err!=nil {
+		if err != nil {
 			log.Println(err)
 		}
-		out.High()								//输出高电平
-		out.Low()								//输出低电平
+		out.High() //输出高电平
+		out.Low()  //输出低电平
 
 		//声明针脚为in输入
-		in,err:=pin2.SetIn()
-		if err!=nil {
+		in, err := pin2.SetIn()
+		if err != nil {
 			log.Println(err)
 		}
-		log.Println(in.Read())					//读取输入的数据
+		log.Println(in.Read()) //读取输入的数据
 
 		//不声明，直接读取数据。时合在其他程序使用此针脚时读取其数据
 		log.Println(pin3.Read())
+
+		//声明为PWM（此功能为实验性功能，这里的PWM由软件生成，所以运行时会占用一定的cpu资源，频率越高cpu占用也越高）
+		pwm, err := pin4.SetPWM()
+		if err != nil {
+			log.Println(err)
+		}
+		err = pwm.SetFreq(5) //频率单位为Hz，数值 > 0.0
+		err = pwm.SetDC(20)  //占空比单位为% ，0.0 < 数值 < 100
+		if err != nil {
+			log.Println(err)
+		}
+		pwm.StartPWM() //开启PWM
+		pwm.StopPWM()  //关闭PWM
 
 		//释放
 		pin1.Close()
 		pin2.Close()
 		pin3.Close()
+		pin4.Close()
 	}
 */
 
@@ -51,6 +66,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
+	"time"
 )
 
 var (
@@ -65,7 +81,7 @@ type _Config struct {
 	PWM  struct {
 		freq float32
 		dc   float32
-		stop chan bool
+		stop bool
 	}
 }
 
@@ -84,10 +100,10 @@ type _InOperating interface {
 	Read() ([]byte, error)
 }
 type _PWM interface {
-	setFreq(float32) error
-	setDC(float32) error
-	start() error
-	close() error
+	SetFreq(float32) error
+	SetDC(float32) error
+	StartPWM()
+	StopPWM()
 }
 
 func PinBind(port int) _Bind {
@@ -148,28 +164,38 @@ func (c *_Config) Low() {
 
 }
 
-func (c *_Config) setFreq(freq float32) error {
+func (c *_Config) SetFreq(freq float32) error {
 	if freq <= 0.0 {
 		return errors.New("freq 需要大于0.0")
 	}
 	c.PWM.freq = freq
 	return nil
 }
-func (c *_Config) setDC(dc float32) error {
+func (c *_Config) SetDC(dc float32) error {
 	if dc >= 100.0 || dc <= 0.0 {
 		return errors.New("dc 需要在0.0到100.0之间")
 	}
 	c.PWM.dc = dc
 	return nil
 }
-func (c *_Config) start() error {
+func (c *_Config) StartPWM() {
+	c.PWM.stop = false
+
+	freq := 1 / c.PWM.freq
+	high := time.Duration(freq*c.PWM.dc/100*1e6) * time.Microsecond
+	low := time.Duration(freq*1e6)*time.Microsecond - high
 	go func() {
 		for {
-
+			if !c.PWM.stop {
+				break
+			}
+			c.High()
+			time.Sleep(high)
+			c.Low()
+			time.Sleep(low)
 		}
 	}()
-	return nil
 }
-func (c *_Config) close() error {
-	return nil
+func (c *_Config) StopPWM() {
+	c.PWM.stop = true
 }
