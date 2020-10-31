@@ -47,6 +47,7 @@
 package gogpio
 
 import (
+	"errors"
 	"io/ioutil"
 	"log"
 	"strconv"
@@ -59,26 +60,38 @@ var (
 	cPath     = ""
 )
 
-type Config struct {
+type _Config struct {
 	Port string
+	PWM  struct {
+		freq float32
+		dc   float32
+		stop chan bool
+	}
 }
 
-type Bind interface {
-	SetOut() (OutOperating, error)
-	SetIn() (InOperating, error)
+type _Bind interface {
+	SetOut() (_OutOperating, error)
+	SetIn() (_InOperating, error)
+	SetPWM() (_PWM, error)
 	Read() ([]byte, error)
 	Close()
 }
-type OutOperating interface {
+type _OutOperating interface {
 	High()
 	Low()
 }
-type InOperating interface {
+type _InOperating interface {
 	Read() ([]byte, error)
 }
+type _PWM interface {
+	setFreq(float32) error
+	setDC(float32) error
+	start() error
+	close() error
+}
 
-func PinBind(port int) (Bind) {
-	c := &Config{
+func PinBind(port int) _Bind {
+	c := &_Config{
 		Port: strconv.Itoa(port),
 	}
 	modePath = "/sys/class/gpio/gpio" + c.Port + "/direction"
@@ -89,20 +102,29 @@ func PinBind(port int) (Bind) {
 	return c
 }
 
-
-
-func (c *Config) SetOut() (OutOperating, error) {
+func (c *_Config) SetOut() (_OutOperating, error) {
 	err := ioutil.WriteFile(cPath, []byte(c.Port), 0644)
 	ioutil.WriteFile(modePath, []byte("out"), 0644)
 	return c, err
 }
 
-func (c *Config) SetIn() (InOperating, error) {
+func (c *_Config) SetIn() (_InOperating, error) {
 	err := ioutil.WriteFile(cPath, []byte(c.Port), 0644)
 	ioutil.WriteFile(modePath, []byte("in"), 0644)
 	return c, err
 }
-func (c *Config) Read() ([]byte, error) {
+
+//freq	:PWM频率（Hz）	freq > 0.0
+//dc	:PWM占空比		0.0<=dc<=100.0
+func (c *_Config) SetPWM() (_PWM, error) {
+	_, err := c.SetOut()
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (c *_Config) Read() ([]byte, error) {
 	s, err := ioutil.ReadFile(valuePath)
 	if err != nil {
 		return nil, err
@@ -110,18 +132,44 @@ func (c *Config) Read() ([]byte, error) {
 	return s, err
 }
 
-func (c *Config) Close() {
+func (c *_Config) Close() {
 	err := ioutil.WriteFile(closePath, []byte(c.Port), 0644)
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func (c *Config) High() {
+func (c *_Config) High() {
 	ioutil.WriteFile(valuePath, []byte("1"), 0644)
 
 }
-func (c *Config) Low() {
+func (c *_Config) Low() {
 	ioutil.WriteFile(valuePath, []byte("0"), 0644)
 
+}
+
+func (c *_Config) setFreq(freq float32) error {
+	if freq <= 0.0 {
+		return errors.New("freq 需要大于0.0")
+	}
+	c.PWM.freq = freq
+	return nil
+}
+func (c *_Config) setDC(dc float32) error {
+	if dc >= 100.0 || dc <= 0.0 {
+		return errors.New("dc 需要在0.0到100.0之间")
+	}
+	c.PWM.dc = dc
+	return nil
+}
+func (c *_Config) start() error {
+	go func() {
+		for {
+
+		}
+	}()
+	return nil
+}
+func (c *_Config) close() error {
+	return nil
 }
