@@ -13,6 +13,12 @@
 
 使用示例：
 
+    package main
+    import (
+        gogpio "github.com/Rehtt/gogpio"
+        "log"
+        "time"
+    )
     func main() {
     //绑定针脚号(BCM)
     pin1, err1 := gogpio.PinBind(20)
