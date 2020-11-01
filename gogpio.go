@@ -145,7 +145,7 @@ func PinBind(port int) (_Bind, error) {
 	closePath = "/sys/class/gpio/unexport"
 	cPath = "/sys/class/gpio/export"
 
-	_, err := os.Lstat(cPath)
+	_, err := os.Lstat(valuePath)
 	if err != nil {
 		err = nil
 		err = ioutil.WriteFile(cPath, []byte(c.Port), 0644)
