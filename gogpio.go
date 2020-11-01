@@ -7,7 +7,7 @@
 //		1.设置指定的GPIO口是发射还是接收口（in/out）
 //		2.设置发射口是高电平还是低电平（1/0）
 //		3.释放GPIO口（Close()）
-//		4.软件实现PWM
+//		4.软件实现PWM（实验性，频率越高越消耗cpu资源）
 //
 //	示例：
 //		package main
@@ -167,8 +167,6 @@ func (c *_Config) SetIn() (_InOperating, error) {
 	return c, err
 }
 
-//freq	:PWM频率（Hz）	freq > 0.0
-//dc	:PWM占空比		0.0<=dc<=100.0
 /** SetPWM
  * @Description: 将目标针脚设为PWM模式
  * @receiver c
