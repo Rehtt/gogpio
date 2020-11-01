@@ -6,9 +6,12 @@
 2. 设置发射口是高电平还是低电平（1/0）
 3. 释放GPIO口（Close()）
 4. 软件实现PWM（实验性功能，可能会导致系统不稳定）
-	
 
-示例：
+安装：
+
+    go get github.com/Rehtt/gogpio	
+
+使用示例：
 
     func main() {
     //绑定针脚号(BCM)
