@@ -19,34 +19,37 @@
 //
 //		func main() {
 //			//绑定针脚号(BCM)
-//			pin1 := gogpio.PinBind(20)
-//			pin2 := gogpio.PinBind(21)
-//			pin3 := gogpio.PinBind(22)
-//			pin4 := gogpio.PinBind(23)
+//			pin1, err1 := gogpio.PinBind(20)
+//			pin2, err2 := gogpio.PinBind(21)
+//			pin3, err3 := gogpio.PinBind(22)
+//			pin4, err4 := gogpio.PinBind(23)
 //
 //			//声明针脚为out输出
-//			out, err := pin1.SetOut()
-//			if err != nil {
-//				log.Println(err)
+//			if err1 != nil {
+//				log.Println(err1)
 //			}
+//			out := pin1.SetOut()
 //			out.High() //输出高电平
 //			out.Low()  //输出低电平
 //
 //			//声明针脚为in输入
-//			in, err := pin2.SetIn()
-//			if err != nil {
-//				log.Println(err)
+//			if err2 != nil {
+//				log.Println(err2)
 //			}
+//			in := pin2.SetIn()
 //			log.Println(in.Read()) //读取输入的数据
 //
 //			//不声明，直接读取数据。时合在其他程序使用此针脚时读取其数据
+//			if err3 != nil {
+//				log.Println(err3)
+//			}
 //			log.Println(pin3.Read())
 //
 //			//声明为PWM（此功能为实验性功能，这里的PWM由软件生成，所以运行时会占用一定的cpu资源，频率越高cpu占用也越高）
-//			pwm, err := pin4.SetPWM()
-//			if err != nil {
-//				log.Println(err)
+//			if err4 != nil {
+//				log.Println(err4)
 //			}
+//			pwm := pin4.SetPWM()
 //			err = pwm.SetFreq(5) //频率单位为Hz，数值 > 0.0
 //			err = pwm.SetDC(20)  //占空比单位为% ，0.0 < 数值 < 100
 //			if err != nil {
@@ -67,6 +70,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"time"
 )
@@ -94,9 +98,9 @@ type _Config struct {
  * @Description: 针脚模式
  */
 type _Bind interface {
-	SetOut() (_OutOperating, error)
-	SetIn() (_InOperating, error)
-	SetPWM() (_PWM, error)
+	SetOut() _OutOperating
+	SetIn() _InOperating
+	SetPWM() _PWM
 	Read() ([]byte, error)
 	Close()
 }
@@ -130,8 +134,9 @@ type _PWM interface {
  * @Description: 输入针脚编号启动针脚
  * @param port
  * @return _Bind
+ * @return error
  */
-func PinBind(port int) _Bind {
+func PinBind(port int) (_Bind, error) {
 	c := &_Config{
 		Port: strconv.Itoa(port),
 	}
@@ -140,45 +145,45 @@ func PinBind(port int) _Bind {
 	closePath = "/sys/class/gpio/unexport"
 	cPath = "/sys/class/gpio/export"
 
-	return c
+	_, err := os.Lstat(cPath)
+	if err != nil {
+		err = nil
+		err = ioutil.WriteFile(cPath, []byte(c.Port), 0644)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return c, nil
 }
 
 /** SetOut
  * @Description: 将目标针脚设为out（输出）模式
  * @receiver c
  * @return _OutOperating
- * @return error
  */
-func (c *_Config) SetOut() (_OutOperating, error) {
-	err := ioutil.WriteFile(cPath, []byte(c.Port), 0644)
+func (c *_Config) SetOut() _OutOperating {
 	ioutil.WriteFile(modePath, []byte("out"), 0644)
-	return c, err
+	return c
 }
 
 /** SetIn
  * @Description: 将目标针脚设为in(输入)模式
  * @receiver c
  * @return _InOperating
- * @return error
  */
-func (c *_Config) SetIn() (_InOperating, error) {
-	err := ioutil.WriteFile(cPath, []byte(c.Port), 0644)
+func (c *_Config) SetIn() _InOperating {
 	ioutil.WriteFile(modePath, []byte("in"), 0644)
-	return c, err
+	return c
 }
 
 /** SetPWM
  * @Description: 将目标针脚设为PWM模式
  * @receiver c
  * @return _PWM
- * @return error
  */
-func (c *_Config) SetPWM() (_PWM, error) {
-	_, err := c.SetOut()
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
+func (c *_Config) SetPWM() _PWM {
+	c.SetOut()
+	return c
 }
 
 /** Read
