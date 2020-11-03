@@ -265,14 +265,15 @@ func (c *_Config) StartPWM() error {
 	if c.PWM.freq == 0 || c.PWM.dc == 0 {
 		return errors.New("需要设置freq（频率）和dc（空占比）")
 	}
-	freq := 1 / c.PWM.freq
-	high := time.Duration(freq*c.PWM.dc/100*1e6) * time.Microsecond
-	low := time.Duration(freq*1e6)*time.Microsecond - high
 	go func() {
+		freq := 1 / c.PWM.freq
+		high := time.Duration(freq*c.PWM.dc/100*1e6) * time.Microsecond
+		low := time.Duration(freq*1e6)*time.Microsecond - high
 		for {
 			if c.PWM.stop {
-				break
+				return
 			}
+
 			c.High()
 			time.Sleep(high)
 			c.Low()
