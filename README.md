@@ -66,3 +66,6 @@
     pin3.Close()
     pin4.Close()
     }
+    
+# TODO
+1. 硬件PWM
