@@ -1,17 +1,17 @@
 # gogpio
 
 对GPIO简单的操作
-功能：
+## 功能：
 1. 设置指定的GPIO口是发射还是接收口（in/out）
 2. 设置发射口是高电平还是低电平（1/0）
 3. 释放GPIO口（Close()）
 4. 软件实现PWM（实验性功能，可能会导致系统不稳定）
 
-安装：
+## 安装：
 
     go get github.com/Rehtt/gogpio	
 
-使用示例：
+## 使用示例：
 
     package main
     import (
@@ -67,5 +67,5 @@
     pin4.Close()
     }
     
-# TODO
+## TODO
 1. 硬件PWM
